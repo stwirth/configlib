@@ -35,7 +35,7 @@ dynamic_reconfigure::Config createTestReconfigureConfig()
   return config;
 }
 
-TEST(ConfigServerROS, readFromROSParameterServer)
+TEST(ConfigServerROS, valuesArereadFromROSParameterServer)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int_param");
@@ -58,7 +58,7 @@ TEST(ConfigServerROS, readFromROSParameterServer)
   EXPECT_EQ("Hello World!", cfg->get("str_param").as<std::string>());
 }
 
-TEST(ConfigServerROS, invalidROSNameThrows)
+TEST(ConfigServerROS, startThrowsOnInvalidROSName)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int param");
@@ -140,6 +140,16 @@ TEST(ConfigServerROS, startThrowsOnTypeMismatchString)
   EXPECT_NO_THROW(cs.start());
 }
 
+/**
+ * Helper class to count how many messages have been received.
+ */
+template<typename T>
+struct MessageCounter {
+  int count = 0;
+  void callback(const typename T::ConstPtr &msg) {
+    count++;
+  }
+};
 
 TEST(ConfigServerROS, setParametersService)
 {
@@ -150,7 +160,7 @@ TEST(ConfigServerROS, setParametersService)
   cfg->add("str_param");
 
   ros::NodeHandle nh("~");
-  // make sure to clearthe param server
+  // make sure to clear the param server
   // (there may be leftovers from previous tests)
   nh.deleteParam("int_param");
   nh.deleteParam("double_param");
@@ -161,19 +171,25 @@ TEST(ConfigServerROS, setParametersService)
 
   ros::ServiceClient client =
     nh.serviceClient<dynamic_reconfigure::Reconfigure>("set_parameters");
-  dynamic_reconfigure::Reconfigure::Request srv_req;
-  srv_req.config = createTestReconfigureConfig();
-  dynamic_reconfigure::Reconfigure::Response srv_res;
+  dynamic_reconfigure::Reconfigure::Request request;
+  request.config = createTestReconfigureConfig();
+  dynamic_reconfigure::Reconfigure::Response response;
 
   ASSERT_TRUE(client.waitForExistence(ros::Duration(5.0)));
-  EXPECT_TRUE(client.call(srv_req, srv_res));
 
-  std::cout << "called reconfigure service" << std::endl;
+  // check that parameter_updates are sent
+  MessageCounter<dynamic_reconfigure::Config> message_counter;
+  int queue_size = 1;
+  ros::Subscriber sub = nh.subscribe("parameter_updates", queue_size,
+      &MessageCounter<dynamic_reconfigure::Config>::callback, &message_counter);
 
-  EXPECT_EQ(srv_req.config.ints[0].value, cfg->get("int_param").as<int>());
-  EXPECT_FLOAT_EQ(123.456, cfg->get("double_param").as<double>());
-  EXPECT_EQ(true, cfg->get("bool_param").as<bool>());
-  EXPECT_EQ("Hello World!", cfg->get("str_param").as<std::string>());
+  EXPECT_TRUE(client.call(request, response));
+  EXPECT_EQ(1, message_counter.count);
+
+  EXPECT_EQ(request.config.ints[0].value, cfg->get("int_param").as<int>());
+  EXPECT_FLOAT_EQ(request.config.doubles[0].value, cfg->get("double_param").as<double>());
+  EXPECT_EQ(request.config.bools[0].value, cfg->get("bool_param").as<bool>());
+  EXPECT_EQ(request.config.strs[0].value, cfg->get("str_param").as<std::string>());
 }
 
 

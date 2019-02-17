@@ -40,10 +40,13 @@ private:
   bool setParameters(dynamic_reconfigure::Reconfigure::Request &req,
     dynamic_reconfigure::Reconfigure::Response &res);
 
+  void sendParameterUpdates();
+
   ros::NodeHandle nh_;
   Config::Ptr cfg_;
 
   ros::ServiceServer reconfigure_service_;
+  ros::Publisher parameter_updates_pub_;
 
 };
 
