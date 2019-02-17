@@ -21,7 +21,7 @@ public:
   void set(const T& value) {
     XmlRpc::XmlRpcValue new_value(value);
     if (value_.valid() && value_.getType() != new_value.getType()) {
-      throw TypeMismatchException();
+      throw TypeMismatchException(name_);
     }
     value_ = new_value;
   }
@@ -29,12 +29,12 @@ public:
   template<typename T>
   T as() { // TODO make const
     if (!value_.valid()) {
-      throw NoValueException();
+      throw NoValueException(name_);
     }
     try {
       return static_cast<T>(value_);
     } catch (const XmlRpc::XmlRpcException&) {
-      throw TypeMismatchException();
+      throw TypeMismatchException(name_);
     }
   }
 

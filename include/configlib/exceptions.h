@@ -14,9 +14,6 @@ public:
 class NoValueException : public Exception
 {
 public:
-  NoValueException() : Exception("parameter has no value")
-  {}
-
   NoValueException(const std::string &name) :
     Exception(std::string("parameter '") + name + "' has no value")
   {}
@@ -33,9 +30,6 @@ public:
 class TypeMismatchException : public Exception
 {
 public:
-  TypeMismatchException() : Exception("type mismatch")
-  {}
-
   TypeMismatchException(const std::string &name) :
     Exception(std::string("type mismatch for parameter '") + name + "'")
   {}

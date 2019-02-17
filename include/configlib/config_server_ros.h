@@ -2,6 +2,8 @@
 
 #include <configlib/config.h>
 #include <configlib/exceptions.h>
+
+#include <dynamic_reconfigure/Reconfigure.h>
 #include <ros/ros.h>
 
 namespace configlib
@@ -35,8 +37,13 @@ public:
 
 private:
 
+  bool setParameters(dynamic_reconfigure::Reconfigure::Request &req,
+    dynamic_reconfigure::Reconfigure::Response &res);
+
   ros::NodeHandle nh_;
   Config::Ptr cfg_;
+
+  ros::ServiceServer reconfigure_service_;
 
 };
 
