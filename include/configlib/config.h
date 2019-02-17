@@ -23,9 +23,18 @@ public:
 
   Parameter& get(const std::string &name);
 
+  std::vector<Parameter>& parameters();
+
+  void lock();
+
+  void unlock();
+
 private:
 
-  std::unordered_map<std::string, Parameter> parameters_;
+  std::vector<Parameter> parameters_;
+
+  // for O(1) access
+  std::unordered_map<std::string, int> parameter_index_;
   std::mutex parameters_mutex_;
 
 };

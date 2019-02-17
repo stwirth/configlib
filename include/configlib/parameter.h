@@ -10,10 +10,11 @@ class Parameter
 
 public:
 
-  template<typename T>
-  Parameter& defaultValue(const T& value) {
-    set(value_);
-    return this;
+  inline Parameter(const std::string &name) : name_(name) {
+  }
+
+  inline std::string name() const {
+    return name_;
   }
 
   template<typename T>
@@ -26,7 +27,7 @@ public:
   }
 
   template<typename T>
-  T as() {
+  T as() { // TODO make const
     if (!value_.valid()) {
       throw NoValueException();
     }
@@ -39,6 +40,7 @@ public:
 
 private:
 
+  std::string name_;
   XmlRpc::XmlRpcValue value_;
 
 };

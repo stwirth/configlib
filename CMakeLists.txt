@@ -48,6 +48,12 @@ add_library(${PROJECT_NAME}
   src/config.cpp
 )
 
+add_library(${PROJECT_NAME}_ros
+  src/config_server_ros.cpp
+)
+
+target_link_libraries(${PROJECT_NAME}_ros ${PROJECT_NAME})
+
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
@@ -112,16 +118,16 @@ add_library(${PROJECT_NAME}
 ## Testing ##
 #############
 
-catkin_add_gtest(${PROJECT_NAME}_config_test test/test_config.cpp)
-if(TARGET ${PROJECT_NAME}_config_test)
+if(CATKIN_ENABLE_TESTING)
+  find_package(rostest REQUIRED)
+
+  catkin_add_gtest(${PROJECT_NAME}_config_test test/test_config.cpp)
   target_link_libraries(${PROJECT_NAME}_config_test ${PROJECT_NAME} ${catkin_LIBRARIES})
-endif()
 
-catkin_add_gtest(${PROJECT_NAME}_parameter_test test/test_parameter.cpp)
-if(TARGET ${PROJECT_NAME}_parameter_test)
+  catkin_add_gtest(${PROJECT_NAME}_parameter_test test/test_parameter.cpp)
   target_link_libraries(${PROJECT_NAME}_parameter_test ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+  add_rostest_gtest(${PROJECT_NAME}_config_server_ros_test test/config_server_ros.test test/test_config_server_ros.cpp)
+  target_link_libraries(${PROJECT_NAME}_config_server_ros_test ${PROJECT_NAME}_ros ${catkin_LIBRARIES})
 endif()
 
-
-## Add folders to be run by python nosetests
-# catkin_add_nosetests(test)

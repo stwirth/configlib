@@ -6,9 +6,15 @@
 namespace configlib {
 namespace {
 
+TEST(Parameter, name)
+{
+  Parameter param("param");
+  EXPECT_EQ("param", param.name());
+}
+
 TEST(Parameter, asOnEmptyThrows)
 {
-  Parameter param;
+  Parameter param("param");
   EXPECT_THROW(param.as<int>(), NoValueException);
   EXPECT_THROW(param.as<double>(), NoValueException);
   EXPECT_THROW(param.as<bool>(), NoValueException);
@@ -17,7 +23,7 @@ TEST(Parameter, asOnEmptyThrows)
 
 TEST(Parameter, asInt)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(42);
   EXPECT_NO_THROW(param.as<int>());
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
@@ -27,7 +33,7 @@ TEST(Parameter, asInt)
 
 TEST(Parameter, asDouble)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(3.141593);
   EXPECT_THROW(param.as<int>(), TypeMismatchException);
   EXPECT_NO_THROW(param.as<double>());
@@ -37,7 +43,7 @@ TEST(Parameter, asDouble)
 
 TEST(Parameter, asBool)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(true);
   EXPECT_THROW(param.as<int>(), TypeMismatchException);
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
@@ -47,7 +53,7 @@ TEST(Parameter, asBool)
 
 TEST(Parameter, asString)
 {
-  Parameter param;
+  Parameter param("param");
   param.set("Hello World!");
   EXPECT_THROW(param.as<int>(), TypeMismatchException);
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
@@ -57,7 +63,7 @@ TEST(Parameter, asString)
 
 TEST(Parameter, setTwiceInt)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(42);
   EXPECT_NO_THROW(param.set(10));
   EXPECT_THROW(param.set(3.141502), TypeMismatchException);
@@ -67,7 +73,7 @@ TEST(Parameter, setTwiceInt)
 
 TEST(Parameter, setTwiceDouble)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(3.1415);
   EXPECT_THROW(param.set(42), TypeMismatchException);
   EXPECT_NO_THROW(param.set(6.283));
@@ -77,7 +83,7 @@ TEST(Parameter, setTwiceDouble)
 
 TEST(Parameter, setTwiceBool)
 {
-  Parameter param;
+  Parameter param("param");
   param.set(true);
   EXPECT_THROW(param.set(42), TypeMismatchException);
   EXPECT_THROW(param.set(6.283), TypeMismatchException);
@@ -87,7 +93,7 @@ TEST(Parameter, setTwiceBool)
 
 TEST(Parameter, setTwiceString)
 {
-  Parameter param;
+  Parameter param("param");
   param.set("Hello World!");
   EXPECT_THROW(param.set(42), TypeMismatchException);
   EXPECT_THROW(param.set(6.283), TypeMismatchException);
