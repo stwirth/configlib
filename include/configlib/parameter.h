@@ -17,31 +17,40 @@ public:
     return name_;
   }
 
-  bool hasValue() const {
-    return value_.valid();
-  }
-
   template<typename T>
   void set(const T& value) {
     value_ = XmlRpc::XmlRpcValue(value);
   }
 
   template<typename T>
-  T as() { // TODO make const
+  T as() const { // TODO make const
     if (!value_.valid()) {
       throw NoValueException(name_);
     }
     try {
-      return static_cast<T>(value_);
+      // couldn't find a way without this ugly cast
+      return static_cast<T>(const_cast<Parameter*>(this)->value_);
     } catch (const XmlRpc::XmlRpcException&) {
       throw TypeMismatchException(name_);
     }
   }
 
+  template<typename T>
+  bool isType() const {
+    // For C++17 std::variant this will change to std::holds_alternative
+    try {
+      as<T>();
+      return true;
+    } catch (const TypeMismatchException&) {
+    } catch (const NoValueException&) {
+    }
+    return false;
+  }
+
 private:
 
   std::string name_;
-  XmlRpc::XmlRpcValue value_;
+  XmlRpc::XmlRpcValue value_; // TODO switch to std::variant in C++17
 
 };
 } // namespace configlib

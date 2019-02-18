@@ -25,6 +25,8 @@ public:
 
   std::vector<Parameter>& parameters();
 
+  const std::vector<Parameter>& parameters() const;
+
   // for use with std::lock_guard
   void lock();
 

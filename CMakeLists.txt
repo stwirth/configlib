@@ -127,6 +127,9 @@ if(CATKIN_ENABLE_TESTING)
   catkin_add_gtest(${PROJECT_NAME}_parameter_test test/test_parameter.cpp)
   target_link_libraries(${PROJECT_NAME}_parameter_test ${PROJECT_NAME} ${catkin_LIBRARIES})
 
+  catkin_add_gtest(${PROJECT_NAME}_config_server_ros_detail_test test/test_config_server_ros_detail.cpp)
+  target_link_libraries(${PROJECT_NAME}_config_server_ros_detail_test ${PROJECT_NAME}_ros ${catkin_LIBRARIES})
+
   add_rostest_gtest(${PROJECT_NAME}_config_server_ros_test test/config_server_ros.test test/test_config_server_ros.cpp)
   target_link_libraries(${PROJECT_NAME}_config_server_ros_test ${PROJECT_NAME}_ros ${catkin_LIBRARIES})
 endif()

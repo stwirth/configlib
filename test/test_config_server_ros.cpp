@@ -27,6 +27,7 @@ template<typename T>
 struct MessageReceiver {
   typename T::ConstPtr last_message;
   void callback(const typename T::ConstPtr &msg) {
+    ROS_INFO("callback!");
     last_message = msg;
   }
 };
@@ -64,7 +65,7 @@ TEST(ConfigServerROS, startThrowsOnInvalidROSName)
   EXPECT_THROW(cs.start(), InvalidNameException);
 }
 
-TEST(ConfigServerROS, parameterDescriptionIsPublishedOnStart)
+TEST(ConfigServerROS, parameterDescriptionsArePublishedOnStart)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int_param").set(42);
@@ -77,12 +78,14 @@ TEST(ConfigServerROS, parameterDescriptionIsPublishedOnStart)
   ros::Subscriber sub = nh.subscribe("parameter_descriptions", queue_size,
       &MessageCounter<dynamic_reconfigure::ConfigDescription>::callback, &message_counter);
   message_counter.count = 0;
+
   cs.start();
-  ros::spinOnce();
+  ros::Duration(1).sleep();
+
   EXPECT_EQ(1, message_counter.count);
 }
 
-TEST(ConfigServerROS, parameterDescriptionHasCorrectContent)
+TEST(ConfigServerROS, parameterDescriptionsHaveCorrectContent)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int_param").set(123);
@@ -92,27 +95,18 @@ TEST(ConfigServerROS, parameterDescriptionHasCorrectContent)
 
   ros::NodeHandle nh("~");
   ConfigServerROS cs(nh, cfg);
-  cs.start();
 
   MessageReceiver<dynamic_reconfigure::ConfigDescription> message_receiver;
   int queue_size = 1;
   ros::Subscriber sub = nh.subscribe("parameter_descriptions", queue_size,
       &MessageReceiver<dynamic_reconfigure::ConfigDescription>::callback, &message_receiver);
-  ros::spinOnce();
-  ASSERT_TRUE(message_receiver.last_message != 0);
 
+  cs.start();
+  ros::Duration(1).sleep();
+
+  ASSERT_TRUE(message_receiver.last_message != 0);
   ASSERT_EQ(1, message_receiver.last_message->groups.size());
   ASSERT_EQ(4, message_receiver.last_message->groups[0].parameters.size());
-  // This is a bit over-constraining, the order of the parameters in the message should not matter.
-  // However, this is simple to do and may be a nice way of ordering parameters in the UI.
-  EXPECT_EQ("int_param", message_receiver.last_message->groups[0].parameters[0].name);
-  EXPECT_EQ("int", message_receiver.last_message->groups[0].parameters[0].type);
-  EXPECT_EQ("double_param", message_receiver.last_message->groups[0].parameters[1].name);
-  EXPECT_EQ("double", message_receiver.last_message->groups[0].parameters[1].type);
-  EXPECT_EQ("bool_param", message_receiver.last_message->groups[0].parameters[2].name);
-  EXPECT_EQ("bool_param", message_receiver.last_message->groups[0].parameters[2].type);
-  EXPECT_EQ("str_param", message_receiver.last_message->groups[0].parameters[3].name);
-  EXPECT_EQ("str", message_receiver.last_message->groups[0].parameters[3].type);
 }
 
 
@@ -164,7 +158,7 @@ TEST(ConfigServerROS, setParametersServiceChangesConfig)
 TEST(ConfigServerROS, parameterUpdatesAreSentOnStart)
 {
   Config::Ptr cfg(new Config());
-  cfg->add("param");
+  cfg->add("param").set(42);
 
   ros::NodeHandle nh("~");
   ConfigServerROS cs(nh, cfg);
@@ -179,39 +173,6 @@ TEST(ConfigServerROS, parameterUpdatesAreSentOnStart)
   ros::spinOnce();
   EXPECT_EQ(1, message_counter.count);
 }
-
-TEST(ConfigServerROS, parameterUpdatesAreSentAfterSetParametersCall)
-{
-  Config::Ptr cfg(new Config());
-  cfg->add("param");
-
-  ros::NodeHandle nh("~");
-  ConfigServerROS cs(nh, cfg);
-  cs.start();
-
-  ros::ServiceClient client =
-    nh.serviceClient<dynamic_reconfigure::Reconfigure>("set_parameters");
-
-  dynamic_reconfigure::Reconfigure::Request req;
-  dynamic_reconfigure::IntParameter int_param;
-  int_param.name = "param";
-  int_param.value = 987;
-  req.config.ints.push_back(int_param);
-
-  MessageCounter<dynamic_reconfigure::Config> message_counter;
-  int queue_size = 1;
-  ros::Subscriber sub = nh.subscribe("parameter_updates", queue_size,
-      &MessageCounter<dynamic_reconfigure::Config>::callback, &message_counter);
-
-  ASSERT_TRUE(client.waitForExistence(ros::Duration(5.0)));
-  dynamic_reconfigure::Reconfigure::Response res;
-
-  message_counter.count = 0;
-  EXPECT_TRUE(client.call(req, res));
-  ros::spinOnce();
-  EXPECT_EQ(1, message_counter.count);
-}
-
 
 } // anonymous namespace
 } // namespace configlib

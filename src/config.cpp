@@ -24,6 +24,10 @@ std::vector<Parameter>& Config::parameters() {
   return parameters_;
 }
 
+const std::vector<Parameter>& Config::parameters() const {
+  return parameters_;
+}
+
 void Config::lock() {
   parameters_mutex_.lock();
 }

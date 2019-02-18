@@ -45,7 +45,10 @@ void ConfigServerROS::start()
   bool latch = true;
   parameter_updates_pub_ = nh_.advertise<dynamic_reconfigure::Config>(
       "parameter_updates", queue_size, latch);
-  sendParameterUpdates();
+  parameter_descriptions_pub_ = nh_.advertise<dynamic_reconfigure::ConfigDescription>(
+      "parameter_descriptions", queue_size, latch);
+  publishParameterDescriptions();
+  publishParameterUpdates();
   reconfigure_service_ = nh_.advertiseService("set_parameters",
       &ConfigServerROS::setParameters, this);
 }
@@ -57,6 +60,7 @@ bool ConfigServerROS::setParameters(
     dynamic_reconfigure::Reconfigure::Request &req,
     dynamic_reconfigure::Reconfigure::Response &res)
 {
+  std::vector<std::string> updated_params;
   try {
     for (const auto &int_param : req.config.ints) {
       ROS_DEBUG_STREAM("Setting int parameter '" << int_param.name
@@ -83,51 +87,100 @@ bool ConfigServerROS::setParameters(
     ROS_ERROR_STREAM("Error processing dynamic reconfigure request: " << e.what());
     return false;
   }
-  sendParameterUpdates();
+  publishParameterUpdates();
   return true;
 }
 
-void ConfigServerROS::sendParameterUpdates()
+void ConfigServerROS::publishParameterDescriptions()
+{
+  std::lock_guard<Config> lock(*cfg_);
+  dynamic_reconfigure::ConfigDescription config_desc =
+    detail::createConfigDescription(*cfg_);
+  parameter_descriptions_pub_.publish(config_desc);
+}
+
+void ConfigServerROS::publishParameterUpdates()
 {
   std::lock_guard<Config> lock(*cfg_);
   dynamic_reconfigure::Config updates;
-  for (auto& param : cfg_->parameters()) {
-    std::string name = param.name();
-    if (!param.hasValue()) continue;
-    try {
+  for (const auto& param : cfg_->parameters()) {
+    const std::string name = param.name();
+    if (param.isType<int>()) {
       dynamic_reconfigure::IntParameter int_param;
       int_param.value = param.as<int>();
       updates.ints.push_back(int_param);
       nh_.setParam(name, int_param.value);
-    } catch (const Exception &e) {
-      try {
-        dynamic_reconfigure::DoubleParameter double_param;
-        double_param.value = param.as<double>();
-        updates.doubles.push_back(double_param);
-        nh_.setParam(name, double_param.value);
-      } catch (const Exception &e) {
-        try {
-          dynamic_reconfigure::BoolParameter bool_param;
-          bool_param.value = param.as<bool>();
-          updates.bools.push_back(bool_param);
-          nh_.setParam(name, bool_param.value);
-        } catch (const Exception &e) {
-          try {
-            dynamic_reconfigure::StrParameter str_param;
-            str_param.value = param.as<std::string>();
-            updates.strs.push_back(str_param);
-            nh_.setParam(name, str_param.value);
-          } catch (const Exception &e) {
-            ROS_ERROR_STREAM(
-                "Cannot send parameter updates for parameter '"
-                << name << "' (type not supported in ROS)");
-          }
-        }
-      }
+    } else if (param.isType<double>()) {
+      dynamic_reconfigure::DoubleParameter double_param;
+      double_param.value = param.as<double>();
+      updates.doubles.push_back(double_param);
+      nh_.setParam(name, double_param.value);
+    } else if (param.isType<bool>()) {
+      dynamic_reconfigure::BoolParameter bool_param;
+      bool_param.value = param.as<bool>();
+      updates.bools.push_back(bool_param);
+      nh_.setParam(name, bool_param.value);
+    } else if (param.isType<std::string>()) {
+      dynamic_reconfigure::StrParameter str_param;
+      str_param.value = param.as<std::string>();
+      updates.strs.push_back(str_param);
+      nh_.setParam(name, str_param.value);
+    } else {
+      ROS_WARN_STREAM(
+          "Cannot publish parameter updates for parameter '"
+          << name << "' (type not supported in ROS dynamic_reconfigure)");
     }
   }
   parameter_updates_pub_.publish(updates);
 }
+
+namespace detail
+{
+
+class IncompatibleTypeException : public std::runtime_error
+{
+public:
+  IncompatibleTypeException() : std::runtime_error("IncompatibleTypeException")
+  {}
+};
+
+dynamic_reconfigure::ParamDescription createParamDescription(const Parameter &param)
+{
+  dynamic_reconfigure::ParamDescription desc;
+  desc.name = param.name();
+  if (param.isType<int>()) {
+    desc.type = "int";
+  } else if (param.isType<double>()) {
+    desc.type = "double";
+  } else if (param.isType<bool>()) {
+    desc.type = "bool";
+  } else if (param.isType<std::string>()) {
+    desc.type = "str";
+  } else {
+    throw IncompatibleTypeException();
+  }
+  return desc;
+}
+
+dynamic_reconfigure::ConfigDescription createConfigDescription(const Config &cfg)
+{
+  dynamic_reconfigure::ConfigDescription config_desc;
+  config_desc.groups.resize(1);
+  config_desc.groups[0].name = "Default";
+  for (const auto& param : cfg.parameters()) {
+    try {
+      dynamic_reconfigure::ParamDescription param_desc = createParamDescription(param);
+      config_desc.groups[0].parameters.push_back(param_desc);
+    } catch (const IncompatibleTypeException&) {
+      ROS_WARN_STREAM(
+          "Cannot create parameter description for parameter '"
+          << param.name() << "' (type not set or not supported in ROS dynamic_reconfigure)");
+    }
+  }
+  return config_desc;
+}
+
+} // namespace detail
 
 } // namespace configlib
 

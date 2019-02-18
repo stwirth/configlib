@@ -4,6 +4,8 @@
 #include <configlib/exceptions.h>
 
 #include <dynamic_reconfigure/Reconfigure.h>
+#include <dynamic_reconfigure/ConfigDescription.h>
+#include <dynamic_reconfigure/ParamDescription.h>
 #include <ros/ros.h>
 
 namespace configlib
@@ -40,15 +42,25 @@ private:
   bool setParameters(dynamic_reconfigure::Reconfigure::Request &req,
     dynamic_reconfigure::Reconfigure::Response &res);
 
-  void sendParameterUpdates();
+  void publishParameterUpdates();
+  void publishParameterDescriptions();
 
   ros::NodeHandle nh_;
   Config::Ptr cfg_;
 
   ros::ServiceServer reconfigure_service_;
   ros::Publisher parameter_updates_pub_;
+  ros::Publisher parameter_descriptions_pub_;
 
 };
+
+namespace detail
+{
+
+dynamic_reconfigure::ParamDescription createParamDescription(const Parameter &param);
+dynamic_reconfigure::ConfigDescription createConfigDescription(const Config &config);
+
+} // namespace detail
 
 } // namespace configlib
 
