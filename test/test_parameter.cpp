@@ -12,6 +12,16 @@ TEST(Parameter, name)
   EXPECT_EQ("param", param.name());
 }
 
+TEST(Parameter, canSetAllTypes)
+{
+  Parameter param("param");
+  param.set(1);
+  param.set(2.0);
+  param.set(true);
+  param.set("Hello World!");
+  EXPECT_EQ("Hello World!", param.as<std::string>());
+}
+
 TEST(Parameter, asOnEmptyThrows)
 {
   Parameter param("param");
@@ -21,37 +31,40 @@ TEST(Parameter, asOnEmptyThrows)
   EXPECT_THROW(param.as<std::string>(), NoValueException);
 }
 
-TEST(Parameter, asInt)
+TEST(Parameter, intParam)
 {
   Parameter param("param");
   param.set(42);
   EXPECT_NO_THROW(param.as<int>());
+  EXPECT_EQ(42, param.as<int>());
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
   EXPECT_THROW(param.as<bool>(), TypeMismatchException);
   EXPECT_THROW(param.as<std::string>(), TypeMismatchException);
 }
 
-TEST(Parameter, asDouble)
+TEST(Parameter, doubleParam)
 {
   Parameter param("param");
   param.set(3.141593);
+  ASSERT_NO_THROW(param.as<double>());
+  EXPECT_FLOAT_EQ(3.141593, param.as<double>());
   EXPECT_THROW(param.as<int>(), TypeMismatchException);
-  EXPECT_NO_THROW(param.as<double>());
   EXPECT_THROW(param.as<bool>(), TypeMismatchException);
   EXPECT_THROW(param.as<std::string>(), TypeMismatchException);
 }
 
-TEST(Parameter, asBool)
+TEST(Parameter, boolParam)
 {
   Parameter param("param");
   param.set(true);
+  ASSERT_NO_THROW(param.as<bool>());
+  EXPECT_EQ(true, param.as<bool>());
   EXPECT_THROW(param.as<int>(), TypeMismatchException);
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
-  EXPECT_NO_THROW(param.as<bool>());
   EXPECT_THROW(param.as<std::string>(), TypeMismatchException);
 }
 
-TEST(Parameter, asString)
+TEST(Parameter, stringParam)
 {
   Parameter param("param");
   param.set("Hello World!");
@@ -59,46 +72,6 @@ TEST(Parameter, asString)
   EXPECT_THROW(param.as<double>(), TypeMismatchException);
   EXPECT_THROW(param.as<bool>(), TypeMismatchException);
   EXPECT_NO_THROW(param.as<std::string>());
-}
-
-TEST(Parameter, setTwiceInt)
-{
-  Parameter param("param");
-  param.set(42);
-  EXPECT_NO_THROW(param.set(10));
-  EXPECT_THROW(param.set(3.141502), TypeMismatchException);
-  EXPECT_THROW(param.set(true), TypeMismatchException);
-  EXPECT_THROW(param.set("Hello World!"), TypeMismatchException);
-}
-
-TEST(Parameter, setTwiceDouble)
-{
-  Parameter param("param");
-  param.set(3.1415);
-  EXPECT_THROW(param.set(42), TypeMismatchException);
-  EXPECT_NO_THROW(param.set(6.283));
-  EXPECT_THROW(param.set(true), TypeMismatchException);
-  EXPECT_THROW(param.set("Hello World!"), TypeMismatchException);
-}
-
-TEST(Parameter, setTwiceBool)
-{
-  Parameter param("param");
-  param.set(true);
-  EXPECT_THROW(param.set(42), TypeMismatchException);
-  EXPECT_THROW(param.set(6.283), TypeMismatchException);
-  EXPECT_NO_THROW(param.set(false));
-  EXPECT_THROW(param.set("Hello World!"), TypeMismatchException);
-}
-
-TEST(Parameter, setTwiceString)
-{
-  Parameter param("param");
-  param.set("Hello World!");
-  EXPECT_THROW(param.set(42), TypeMismatchException);
-  EXPECT_THROW(param.set(6.283), TypeMismatchException);
-  EXPECT_THROW(param.set(true), TypeMismatchException);
-  EXPECT_NO_THROW(param.set("Goodbye!"));
 }
 
 } // anonymous namespace

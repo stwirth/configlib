@@ -17,13 +17,13 @@ public:
     return name_;
   }
 
+  bool hasValue() const {
+    return value_.valid();
+  }
+
   template<typename T>
   void set(const T& value) {
-    XmlRpc::XmlRpcValue new_value(value);
-    if (value_.valid() && value_.getType() != new_value.getType()) {
-      throw TypeMismatchException(name_);
-    }
-    value_ = new_value;
+    value_ = XmlRpc::XmlRpcValue(value);
   }
 
   template<typename T>

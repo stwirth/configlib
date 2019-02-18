@@ -42,8 +42,10 @@ void ConfigServerROS::start()
     }
   }
   int queue_size = 1;
+  bool latch = true;
   parameter_updates_pub_ = nh_.advertise<dynamic_reconfigure::Config>(
-      "parameter_updates", queue_size);
+      "parameter_updates", queue_size, latch);
+  sendParameterUpdates();
   reconfigure_service_ = nh_.advertiseService("set_parameters",
       &ConfigServerROS::setParameters, this);
 }
@@ -55,7 +57,6 @@ bool ConfigServerROS::setParameters(
     dynamic_reconfigure::Reconfigure::Request &req,
     dynamic_reconfigure::Reconfigure::Response &res)
 {
-  // TODO accept all that are acceptable (more try blocks)
   try {
     for (const auto &int_param : req.config.ints) {
       ROS_DEBUG_STREAM("Setting int parameter '" << int_param.name
@@ -79,7 +80,7 @@ bool ConfigServerROS::setParameters(
       cfg_->get(str_param.name).set(str_param.value);
     }
   } catch (const Exception &e) {
-    ROS_DEBUG_STREAM("Error processing dynamic reconfigure request: " << e.what());
+    ROS_ERROR_STREAM("Error processing dynamic reconfigure request: " << e.what());
     return false;
   }
   sendParameterUpdates();
@@ -92,6 +93,7 @@ void ConfigServerROS::sendParameterUpdates()
   dynamic_reconfigure::Config updates;
   for (auto& param : cfg_->parameters()) {
     std::string name = param.name();
+    if (!param.hasValue()) continue;
     try {
       dynamic_reconfigure::IntParameter int_param;
       int_param.value = param.as<int>();
