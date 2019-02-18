@@ -2,11 +2,34 @@
 #include <configlib/config_server_ros.h>
 
 #include <dynamic_reconfigure/Config.h>
+#include <dynamic_reconfigure/ConfigDescription.h>
 #include <dynamic_reconfigure/Reconfigure.h>
 #include <gtest/gtest.h>
 
 namespace configlib {
 namespace {
+
+/**
+ * Helper class to count how many messages have been received.
+ */
+template<typename T>
+struct MessageCounter {
+  int count = 0;
+  void callback(const typename T::ConstPtr &msg) {
+    count++;
+  }
+};
+
+/**
+ * Helper class to hold on to a message received by a callback.
+ */
+template<typename T>
+struct MessageReceiver {
+  typename T::ConstPtr last_message;
+  void callback(const typename T::ConstPtr &msg) {
+    last_message = msg;
+  }
+};
 
 TEST(ConfigServerROS, valuesAreReadFromROSParameterServer)
 {
@@ -40,6 +63,58 @@ TEST(ConfigServerROS, startThrowsOnInvalidROSName)
   ConfigServerROS cs(nh, cfg);
   EXPECT_THROW(cs.start(), InvalidNameException);
 }
+
+TEST(ConfigServerROS, parameterDescriptionIsPublishedOnStart)
+{
+  Config::Ptr cfg(new Config());
+  cfg->add("int_param").set(42);
+
+  ros::NodeHandle nh("~");
+  ConfigServerROS cs(nh, cfg);
+
+  MessageCounter<dynamic_reconfigure::ConfigDescription> message_counter;
+  int queue_size = 1;
+  ros::Subscriber sub = nh.subscribe("parameter_descriptions", queue_size,
+      &MessageCounter<dynamic_reconfigure::ConfigDescription>::callback, &message_counter);
+  message_counter.count = 0;
+  cs.start();
+  ros::spinOnce();
+  EXPECT_EQ(1, message_counter.count);
+}
+
+TEST(ConfigServerROS, parameterDescriptionHasCorrectContent)
+{
+  Config::Ptr cfg(new Config());
+  cfg->add("int_param").set(123);
+  cfg->add("double_param").set(4.56);
+  cfg->add("bool_param").set(true);
+  cfg->add("str_param").set("Hello World!");
+
+  ros::NodeHandle nh("~");
+  ConfigServerROS cs(nh, cfg);
+  cs.start();
+
+  MessageReceiver<dynamic_reconfigure::ConfigDescription> message_receiver;
+  int queue_size = 1;
+  ros::Subscriber sub = nh.subscribe("parameter_descriptions", queue_size,
+      &MessageReceiver<dynamic_reconfigure::ConfigDescription>::callback, &message_receiver);
+  ros::spinOnce();
+  ASSERT_TRUE(message_receiver.last_message != 0);
+
+  ASSERT_EQ(1, message_receiver.last_message->groups.size());
+  ASSERT_EQ(4, message_receiver.last_message->groups[0].parameters.size());
+  // This is a bit over-constraining, the order of the parameters in the message should not matter.
+  // However, this is simple to do and may be a nice way of ordering parameters in the UI.
+  EXPECT_EQ("int_param", message_receiver.last_message->groups[0].parameters[0].name);
+  EXPECT_EQ("int", message_receiver.last_message->groups[0].parameters[0].type);
+  EXPECT_EQ("double_param", message_receiver.last_message->groups[0].parameters[1].name);
+  EXPECT_EQ("double", message_receiver.last_message->groups[0].parameters[1].type);
+  EXPECT_EQ("bool_param", message_receiver.last_message->groups[0].parameters[2].name);
+  EXPECT_EQ("bool_param", message_receiver.last_message->groups[0].parameters[2].type);
+  EXPECT_EQ("str_param", message_receiver.last_message->groups[0].parameters[3].name);
+  EXPECT_EQ("str", message_receiver.last_message->groups[0].parameters[3].type);
+}
+
 
 TEST(ConfigServerROS, setParametersServiceChangesConfig)
 {
@@ -85,18 +160,6 @@ TEST(ConfigServerROS, setParametersServiceChangesConfig)
   EXPECT_EQ(req.config.bools[0].value, cfg->get("bool_param").as<bool>());
   EXPECT_EQ(req.config.strs[0].value, cfg->get("str_param").as<std::string>());
 }
-
-
-/**
- * Helper class to count how many messages have been received.
- */
-template<typename T>
-struct MessageCounter {
-  int count = 0;
-  void callback(const typename T::ConstPtr &msg) {
-    count++;
-  }
-};
 
 TEST(ConfigServerROS, parameterUpdatesAreSentOnStart)
 {
