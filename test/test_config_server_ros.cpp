@@ -8,34 +8,34 @@
 namespace configlib {
 namespace {
 
-dynamic_reconfigure::Config createTestReconfigureConfig()
+dynamic_reconfigure::Reconfigure::Request createTestDynamicReconfigureRequest()
 {
-  dynamic_reconfigure::Config config;
+  dynamic_reconfigure::Reconfigure::Request req;
 
   dynamic_reconfigure::IntParameter int_param;
   int_param.name = "int_param";
   int_param.value = 42;
-  config.ints.push_back(int_param);
+  req.config.ints.push_back(int_param);
 
   dynamic_reconfigure::DoubleParameter double_param;
   double_param.name = "double_param";
   double_param.value = 123.456;
-  config.doubles.push_back(double_param);
+  req.config.doubles.push_back(double_param);
 
   dynamic_reconfigure::BoolParameter bool_param;
   bool_param.name = "bool_param";
   bool_param.value = true;
-  config.bools.push_back(bool_param);
+  req.config.bools.push_back(bool_param);
 
   dynamic_reconfigure::StrParameter str_param;
   str_param.name = "str_param";
   str_param.value = "Hello World!";
-  config.strs.push_back(str_param);
+  req.config.strs.push_back(str_param);
 
-  return config;
+  return req;
 }
 
-TEST(ConfigServerROS, valuesArereadFromROSParameterServer)
+TEST(ConfigServerROS, valuesAreReadFromROSParameterServer)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int_param");
@@ -61,83 +61,25 @@ TEST(ConfigServerROS, valuesArereadFromROSParameterServer)
 TEST(ConfigServerROS, startThrowsOnInvalidROSName)
 {
   Config::Ptr cfg(new Config());
-  cfg->add("int param");
+  cfg->add("invalid param name");
 
   ros::NodeHandle nh("~");
   ConfigServerROS cs(nh, cfg);
   EXPECT_THROW(cs.start(), InvalidNameException);
 }
 
-TEST(ConfigServerROS, startThrowsOnTypeMismatchInt)
+TEST(ConfigServerROS, startThrowsOnTypeMismatch)
 {
   Config::Ptr cfg(new Config());
+  // define integer parameter
   cfg->add("param").set(42);
 
   ros::NodeHandle nh("~");
   ConfigServerROS cs(nh, cfg);
 
-  nh.setParam("param", 789);
-  EXPECT_NO_THROW(cs.start());
-  nh.setParam("param", 123.456);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", true);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
+  // set parameter as string on ROS parameter server
   nh.setParam("param", "Hello World!");
   EXPECT_THROW(cs.start(), TypeMismatchException);
-}
-
-TEST(ConfigServerROS, startThrowsOnTypeMismatchDouble)
-{
-  Config::Ptr cfg(new Config());
-  cfg->add("param").set(123.456);
-
-  ros::NodeHandle nh("~");
-  ConfigServerROS cs(nh, cfg);
-
-  nh.setParam("param", 42);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", 789.012);
-  EXPECT_NO_THROW(cs.start());
-  nh.setParam("param", true);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", "Hello World!");
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-}
-
-TEST(ConfigServerROS, startThrowsOnTypeMismatchBool)
-{
-  Config::Ptr cfg(new Config());
-  cfg->add("param").set(true);
-
-  ros::NodeHandle nh("~");
-  ConfigServerROS cs(nh, cfg);
-
-  nh.setParam("param", 42);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", 123.456);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", false);
-  EXPECT_NO_THROW(cs.start());
-  nh.setParam("param", "Hello World!");
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-}
-
-TEST(ConfigServerROS, startThrowsOnTypeMismatchString)
-{
-  Config::Ptr cfg(new Config());
-  cfg->add("param").set("Hello World!");
-
-  ros::NodeHandle nh("~");
-  ConfigServerROS cs(nh, cfg);
-
-  nh.setParam("param", 42);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", 123.456);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", true);
-  EXPECT_THROW(cs.start(), TypeMismatchException);
-  nh.setParam("param", "Hello World!");
-  EXPECT_NO_THROW(cs.start());
 }
 
 /**
@@ -151,7 +93,7 @@ struct MessageCounter {
   }
 };
 
-TEST(ConfigServerROS, setParametersService)
+TEST(ConfigServerROS, setParametersServiceChangesConfig)
 {
   Config::Ptr cfg(new Config());
   cfg->add("int_param");
@@ -160,19 +102,15 @@ TEST(ConfigServerROS, setParametersService)
   cfg->add("str_param");
 
   ros::NodeHandle nh("~");
-  // make sure to clear the param server
+  // make sure to clear the ROS parameter server
   // (there may be leftovers from previous tests)
-  nh.deleteParam("int_param");
-  nh.deleteParam("double_param");
-  nh.deleteParam("bool_param");
-  nh.deleteParam("str_param");
+  nh.deleteParam(nh.getNamespace());
   ConfigServerROS cs(nh, cfg);
   cs.start();
 
   ros::ServiceClient client =
     nh.serviceClient<dynamic_reconfigure::Reconfigure>("set_parameters");
-  dynamic_reconfigure::Reconfigure::Request request;
-  request.config = createTestReconfigureConfig();
+  dynamic_reconfigure::Reconfigure::Request request = createTestDynamicReconfigureRequest();
   dynamic_reconfigure::Reconfigure::Response response;
 
   ASSERT_TRUE(client.waitForExistence(ros::Duration(5.0)));
@@ -190,6 +128,10 @@ TEST(ConfigServerROS, setParametersService)
   EXPECT_FLOAT_EQ(request.config.doubles[0].value, cfg->get("double_param").as<double>());
   EXPECT_EQ(request.config.bools[0].value, cfg->get("bool_param").as<bool>());
   EXPECT_EQ(request.config.strs[0].value, cfg->get("str_param").as<std::string>());
+}
+
+TEST(ConfigServerROS, parameterUpdatesAreSent)
+{
 }
 
 
