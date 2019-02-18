@@ -54,13 +54,5 @@ private:
 
 };
 
-namespace detail
-{
-
-dynamic_reconfigure::ParamDescription createParamDescription(const Parameter &param);
-dynamic_reconfigure::ConfigDescription createConfigDescription(const Config &config);
-
-} // namespace detail
-
 } // namespace configlib
 

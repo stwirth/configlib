@@ -1,61 +1,64 @@
-#include <configlib/config_server_ros.h>
+#include <configlib/dynamic_reconfigure_conversions.h>
+#include <configlib/parameter.h>
+#include <configlib/config.h>
 
 #include <dynamic_reconfigure/ParamDescription.h>
 #include <dynamic_reconfigure/ConfigDescription.h>
 #include <gtest/gtest.h>
 
 namespace configlib {
+namespace dynamic_reconfigure_conversions {
 namespace {
 
-TEST(ConfigServerROSDetail, createParamDescriptionInt)
+TEST(DynamicReconfigureConversions, createParamDescriptionInt)
 {
   Parameter param("param");
   param.set(42);
 
   dynamic_reconfigure::ParamDescription param_desc;
-  ASSERT_NO_THROW(param_desc = detail::createParamDescription(param));
+  ASSERT_NO_THROW(param_desc = createParamDescription(param));
 
   EXPECT_EQ("param", param_desc.name);
   EXPECT_EQ("int", param_desc.type);
 }
 
-TEST(ConfigServerROSDetail, createParamDescriptionDouble)
+TEST(DynamicReconfigureConversions, createParamDescriptionDouble)
 {
   Parameter param("param");
   param.set(3.1415);
 
   dynamic_reconfigure::ParamDescription param_desc;
-  ASSERT_NO_THROW(param_desc = detail::createParamDescription(param));
+  ASSERT_NO_THROW(param_desc = createParamDescription(param));
 
   EXPECT_EQ("param", param_desc.name);
   EXPECT_EQ("double", param_desc.type);
 }
 
-TEST(ConfigServerROSDetail, createParamDescriptionBool)
+TEST(DynamicReconfigureConversions, createParamDescriptionBool)
 {
   Parameter param("param");
   param.set(true);
 
   dynamic_reconfigure::ParamDescription param_desc;
-  ASSERT_NO_THROW(param_desc = detail::createParamDescription(param));
+  ASSERT_NO_THROW(param_desc = createParamDescription(param));
 
   EXPECT_EQ("param", param_desc.name);
   EXPECT_EQ("bool", param_desc.type);
 }
 
-TEST(ConfigServerROSDetail, createParamDescriptionString)
+TEST(DynamicReconfigureConversions, createParamDescriptionString)
 {
   Parameter param("param");
   param.set("Hello World!");
 
   dynamic_reconfigure::ParamDescription param_desc;
-  ASSERT_NO_THROW(param_desc = detail::createParamDescription(param));
+  ASSERT_NO_THROW(param_desc = createParamDescription(param));
 
   EXPECT_EQ("param", param_desc.name);
   EXPECT_EQ("str", param_desc.type);
 }
 
-TEST(ConfigServerROSDetail, createConfigDescription)
+TEST(DynamicReconfigureConversions, createConfigDescription)
 {
   Config cfg;
   cfg.add("int_param").set(123);
@@ -64,7 +67,7 @@ TEST(ConfigServerROSDetail, createConfigDescription)
   cfg.add("str_param").set("Hello World!");
 
   dynamic_reconfigure::ConfigDescription config_desc =
-    detail::createConfigDescription(cfg);
+    createConfigDescription(cfg);
 
   ASSERT_EQ(1, config_desc.groups.size());
   ASSERT_EQ(4, config_desc.groups[0].parameters.size());
@@ -81,6 +84,7 @@ TEST(ConfigServerROSDetail, createConfigDescription)
 }
 
 } // anonymous namespace
+} // namespace dynamic_reconfigure_conversions
 } // namespace configlib
 
 int main(int argc, char **argv) {
