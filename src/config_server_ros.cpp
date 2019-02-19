@@ -12,7 +12,6 @@ ConfigServerROS::ConfigServerROS(const ros::NodeHandle &nh, const Config::Ptr &c
 void ConfigServerROS::start()
 {
   using XmlRpc::XmlRpcValue;
-
   {
     std::lock_guard<Config> lock(*cfg_);
     for (auto& param : cfg_->parameters()) {

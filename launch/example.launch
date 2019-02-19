@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="configlib_example" pkg="configlib" type="example_node" output="screen" />
+
+  <node name="$(anon rqt)" pkg="rqt_reconfigure" type="rqt_reconfigure" />
+
+</launch>
