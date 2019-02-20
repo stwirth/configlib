@@ -23,7 +23,7 @@ public:
   }
 
   template<typename T>
-  T as() const { // TODO make const
+  T as() const {
     if (!value_.valid()) {
       throw NoValueException(name_);
     }
@@ -50,7 +50,12 @@ public:
 private:
 
   std::string name_;
-  XmlRpc::XmlRpcValue value_; // TODO switch to std::variant in C++17
+
+  // TODO switch from XmlRpcValue to std::variant in C++17
+  // (with std::monotype as first alternative to have an "empty" value)
+  XmlRpc::XmlRpcValue value_;
+  XmlRpc::XmlRpcValue min_value_;
+  XmlRpc::XmlRpcValue max_value_;
 
 };
 } // namespace configlib

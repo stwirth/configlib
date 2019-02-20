@@ -58,6 +58,74 @@ TEST(DynamicReconfigureConversions, createParamDescriptionString)
   EXPECT_EQ("str", param_desc.type);
 }
 
+TEST(DynamicReconfigureConversions, addMinMaxDefaultConfigInt)
+{
+  Parameter param("param");
+  param.set(42);
+
+  dynamic_reconfigure::ConfigDescription config_desc;
+  addMinMaxDefaultConfig(param, config_desc);
+
+  ASSERT_EQ(1, config_desc.min.ints.size());
+  EXPECT_EQ(std::numeric_limits<int>::lowest(), config_desc.min.ints[0].value);
+
+  ASSERT_EQ(1, config_desc.max.ints.size());
+  EXPECT_EQ(std::numeric_limits<int>::max(), config_desc.max.ints[0].value);
+
+  ASSERT_EQ(1, config_desc.dflt.ints.size());
+  EXPECT_EQ(42, config_desc.dflt.ints[0].value);
+}
+
+TEST(DynamicReconfigureConversions, addMinMaxDefaultConfigDouble)
+{
+  Parameter param("param");
+  param.set(4.2);
+
+  dynamic_reconfigure::ConfigDescription config_desc;
+  addMinMaxDefaultConfig(param, config_desc);
+
+  ASSERT_EQ(1, config_desc.min.doubles.size());
+  EXPECT_EQ(std::numeric_limits<double>::lowest(), config_desc.min.doubles[0].value);
+
+  ASSERT_EQ(1, config_desc.max.doubles.size());
+  EXPECT_EQ(std::numeric_limits<double>::max(), config_desc.max.doubles[0].value);
+
+  ASSERT_EQ(1, config_desc.dflt.doubles.size());
+  EXPECT_FLOAT_EQ(4.2, config_desc.dflt.doubles[0].value);
+}
+
+TEST(DynamicReconfigureConversions, addMinMaxDefaultConfigBool)
+{
+  Parameter param("param");
+  param.set(true);
+
+  dynamic_reconfigure::ConfigDescription config_desc;
+  addMinMaxDefaultConfig(param, config_desc);
+
+  ASSERT_EQ(1, config_desc.min.bools.size());
+  EXPECT_EQ(false, config_desc.min.bools[0].value);
+
+  ASSERT_EQ(1, config_desc.max.bools.size());
+  EXPECT_EQ(true, config_desc.max.bools[0].value);
+
+  ASSERT_EQ(1, config_desc.dflt.bools.size());
+  EXPECT_EQ(true, config_desc.dflt.bools[0].value);
+}
+
+TEST(DynamicReconfigureConversions, addMinMaxDefaultConfigString)
+{
+  Parameter param("param");
+  param.set("Hello World!");
+
+  dynamic_reconfigure::ConfigDescription config_desc;
+  addMinMaxDefaultConfig(param, config_desc);
+
+  ASSERT_EQ(0, config_desc.min.strs.size());
+  ASSERT_EQ(0, config_desc.max.strs.size());
+  ASSERT_EQ(1, config_desc.dflt.strs.size());
+  EXPECT_EQ("Hello World!", config_desc.dflt.strs[0].value);
+}
+
 TEST(DynamicReconfigureConversions, createConfigDescription)
 {
   Config cfg;
@@ -81,6 +149,23 @@ TEST(DynamicReconfigureConversions, createConfigDescription)
   EXPECT_EQ("bool", config_desc.groups[0].parameters[2].type);
   EXPECT_EQ("str_param", config_desc.groups[0].parameters[3].name);
   EXPECT_EQ("str", config_desc.groups[0].parameters[3].type);
+
+  EXPECT_EQ(1, config_desc.min.ints.size());
+  EXPECT_EQ(1, config_desc.max.ints.size());
+  EXPECT_EQ(1, config_desc.dflt.ints.size());
+
+  EXPECT_EQ(1, config_desc.min.doubles.size());
+  EXPECT_EQ(1, config_desc.max.doubles.size());
+  EXPECT_EQ(1, config_desc.dflt.doubles.size());
+
+  EXPECT_EQ(1, config_desc.min.bools.size());
+  EXPECT_EQ(1, config_desc.max.bools.size());
+  EXPECT_EQ(1, config_desc.dflt.bools.size());
+
+  // strings don't have min or max
+  EXPECT_EQ(0, config_desc.min.strs.size());
+  EXPECT_EQ(0, config_desc.max.strs.size());
+  EXPECT_EQ(1, config_desc.dflt.strs.size());
 }
 
 } // anonymous namespace

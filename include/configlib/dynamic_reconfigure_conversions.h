@@ -13,7 +13,8 @@ namespace dynamic_reconfigure_conversions
 {
 
 dynamic_reconfigure::ParamDescription createParamDescription(const Parameter &param);
-dynamic_reconfigure::ConfigDescription createConfigDescription(const Config &config);
+void addMinMaxDefaultConfig(const Parameter &param, dynamic_reconfigure::ConfigDescription &config);
+dynamic_reconfigure::ConfigDescription createConfigDescription(const Config &cfg);
 
 } // namespace dynamic_reconfigure_conversions
 
