@@ -107,21 +107,25 @@ void ConfigServerROS::publishParameterUpdates()
     const std::string name = param.name();
     if (param.isType<int>()) {
       dynamic_reconfigure::IntParameter int_param;
+      int_param.name = name;
       int_param.value = param.as<int>();
       updates.ints.push_back(int_param);
       nh_.setParam(name, int_param.value);
     } else if (param.isType<double>()) {
       dynamic_reconfigure::DoubleParameter double_param;
+      double_param.name = name;
       double_param.value = param.as<double>();
       updates.doubles.push_back(double_param);
       nh_.setParam(name, double_param.value);
     } else if (param.isType<bool>()) {
       dynamic_reconfigure::BoolParameter bool_param;
+      bool_param.name = name;
       bool_param.value = param.as<bool>();
       updates.bools.push_back(bool_param);
       nh_.setParam(name, bool_param.value);
     } else if (param.isType<std::string>()) {
       dynamic_reconfigure::StrParameter str_param;
+      str_param.name = name;
       str_param.value = param.as<std::string>();
       updates.strs.push_back(str_param);
       nh_.setParam(name, str_param.value);

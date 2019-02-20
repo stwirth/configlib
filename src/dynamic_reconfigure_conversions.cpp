@@ -61,10 +61,10 @@ void addMinMaxDefaultConfig(const Parameter &param, dynamic_reconfigure::ConfigD
     dynamic_reconfigure::DoubleParameter double_param;
     double_param.name = param.name();
 
-    double_param.value = std::numeric_limits<double>::lowest();
+    double_param.value = -std::numeric_limits<double>::infinity();
     config_desc.min.doubles.push_back(double_param);
 
-    double_param.value = std::numeric_limits<double>::max();
+    double_param.value = std::numeric_limits<double>::infinity();
     config_desc.max.doubles.push_back(double_param);
 
     double_param.value = param.as<double>();
@@ -88,6 +88,8 @@ void addMinMaxDefaultConfig(const Parameter &param, dynamic_reconfigure::ConfigD
 
     dynamic_reconfigure::StrParameter str_param;
     str_param.name = param.name();
+    config_desc.min.strs.push_back(str_param);
+    config_desc.max.strs.push_back(str_param);
     str_param.value = param.as<std::string>();
     config_desc.dflt.strs.push_back(str_param);
 
